@@ -2,10 +2,16 @@
 PROJETO: Processador de Dados de Drone
 O que a GeoScan recebe fotos + coordenadas, processa, gera relatório
 """
-
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from dotenv import load_dotenv
+import os
 import csv
 import json
 from datetime import datetime
+
+load_dotenv()  # Carrega variáveis de ambiente do arquivo .env
 
 class ProcessadorMissao:
     def __init__(self, nome_missao):
@@ -15,7 +21,7 @@ class ProcessadorMissao:
         self.fotos_processadas = 0
 
     def adicionar_voo(self, id_voo, lat, lng, alt, fotos, data):
-        """Registra um voo de drone"""
+        #Registra um voo de drone
         voo = {
             "id": id_voo,
             "latitude": lat,
@@ -30,7 +36,7 @@ class ProcessadorMissao:
         print(f" Voo {id_voo} registrado: {fotos} fotos @ {alt}m")
 
     def estatisticas(self):
-        """Calcula estatísticas da missão"""
+        #Calcula estatísticas da missão
         if not self.voos:
             return {}
 
@@ -53,7 +59,7 @@ class ProcessadorMissao:
         }
 
     def gerar_csv(self):
-        """Gera relatório CSV para análise"""
+        #Gera relatório CSV para análise
         data_hoje = datetime.now().strftime('%Y%m%d')
         nome_arquivo = f"relatorio_{self.nome_missao}_{data_hoje}.csv"
 
@@ -78,7 +84,7 @@ class ProcessadorMissao:
         return nome_arquivo
 
     def gerar_json(self):
-        """Gera relatório JSON para integração"""
+        #Gera relatório JSON para integração
         dados_stats = self.estatisticas() 
         nome_arquivo = f"resumo_{self.nome_missao}.json"
 
@@ -89,7 +95,7 @@ class ProcessadorMissao:
         return nome_arquivo
 
     def resumo_executivo(self):
-        """Gera texto resumido para relatório rápido"""
+        #Gera texto resumido para relatório rápido
         resumo_stats = self.estatisticas()
 
         texto = f"""
@@ -114,7 +120,29 @@ class ProcessadorMissao:
 
         print(f"Resumo executivo: {nome_arquivo}")
         return texto
+    def enviar_email(self, assunto, corpo,para):
+        remetente =  os.getenv("EMAIL_USER")
+        senha = os.getenv("EMAIL_PASSWORD")
+        para = os.getenv("DESTINATARIOS")
 
+        msg = MIMEMultipart()
+        msg['from'] = remetente
+        msg['to'] = para
+        msg['subject'] = assunto 
+        msg.attach(MIMEText(corpo, 'plain')) 
+        try:
+            servidor = smtplib.SMTP('smtp.gmail.com', 587)
+            servidor.starttls()
+            servidor.login(remetente, senha)
+            servidor.send_message(msg)
+            servidor.quit()
+            print(f"Email enviado para: {para}")
+        except smtplib.SMTPAuthenticationError:
+            print("Erro de autenticação: Verifique suas credenciais de email.")    
+        except smtplib.SMTPException as e:
+            print(f"Erro ao enviar email: {e}")
+        except Exception as e:
+            print(f"Erro inesperado: {e}")
 
 # agora aqui vamos ver como todos esses métodos funcionam na prática, simulando uma missão real de drone
 if __name__ == "__main__":
@@ -136,6 +164,12 @@ if __name__ == "__main__":
     missao.gerar_csv()
     missao.gerar_json()
     missao.resumo_executivo()
+     
+    missao.enviar_email (
+        assunto='Relatório de Missão - Mapeamento Soja Pecém 2026',
+        corpo=' Missão concluída com sucesso! Futuramente Relatórios em anexo.',
+        para='kayo.mello1488@gmail.com'
+    ) 
 
     print("\n" + "=" * 50)
     print("MISSÃO PROCESSADA COM SUCESSO!")

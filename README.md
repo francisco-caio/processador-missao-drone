@@ -72,7 +72,6 @@ eficiencia_fotos_por_voo: 253.3
 
 ## 🗺️ Roadmap / Próximos Passos
 
-- Implementação de envio de relatório por E-mail usando SMTP.
 - Tratamento de Exceções para validar entradas e evitar falhas em missões sem dados.
 - Organização dos relatórios em uma pasta dedicada.
 - Validação de coordenadas, altitude, quantidade de fotos e datas.
