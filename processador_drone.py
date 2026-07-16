@@ -2,6 +2,8 @@
 PROJETO: Processador de Dados de Drone
 O que a GeoScan recebe fotos + coordenadas, processa, gera relatório
 """
+from email.mime.base import MIMEBase
+from email import encoders
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -57,13 +59,19 @@ class ProcessadorMissao:
             "area_mapeada_hectares": round(area_total / 10000, 2),
             "eficiencia_fotos_por_voo": round(total_fotos / len(self.voos), 1)
         }
-
+    
     def gerar_csv(self):
         #Gera relatório CSV para análise
         data_hoje = datetime.now().strftime('%Y%m%d')
         nome_arquivo = f"relatorio_{self.nome_missao}_{data_hoje}.csv"
+        nome_pasta = os.getenv("PASTA_RELATORIOS", "relatorios")
+        if not os.path.exists(nome_pasta):
+            os.makedirs(nome_pasta)
+        caminho=os.path.join(nome_pasta,nome_arquivo) 
 
-        with open(nome_arquivo, 'w', newline='', encoding='utf-8') as f:
+
+
+        with open(caminho, 'w', newline='', encoding='utf-8') as f:
             escritor = csv.writer(f)
             escritor.writerow(["Missao", "ID_Voo", "Latitude", "Longitude",
                                "Altitude", "Fotos", "Data", "Area_m2"])
@@ -81,18 +89,24 @@ class ProcessadorMissao:
                 ])
 
         print(f"CSV gerado: {nome_arquivo}")
-        return nome_arquivo
+        return caminho
 
     def gerar_json(self):
         #Gera relatório JSON para integração
         dados_stats = self.estatisticas() 
         nome_arquivo = f"resumo_{self.nome_missao}.json"
+        #lendo a pasta de relatorios da env e criando essa pasta caso nao exista e 
+        #salvando o arquivo json dentro dela
+        nome_pasta = os.getenv("PASTA_RELATORIOS", "relatorios")
+        if not os.path.exists(nome_pasta):
+            os.makedirs(nome_pasta)
+        caminho = os.path.join(nome_pasta, nome_arquivo)
 
-        with open(nome_arquivo, 'w', encoding='utf-8') as f:
+        with open(caminho, 'w', encoding='utf-8') as f:
             json.dump(dados_stats, f, indent=2, ensure_ascii=False)
 
         print(f"JSON gerado: {nome_arquivo}")
-        return nome_arquivo
+        return caminho
 
     def resumo_executivo(self):
         #Gera texto resumido para relatório rápido
@@ -115,21 +129,35 @@ class ProcessadorMissao:
         """
 
         nome_arquivo = f"executivo_{self.nome_missao}.txt"
-        with open(nome_arquivo, 'w', encoding='utf-8') as f:
+        nome_pasta = os.getenv("PASTA_RELATORIOS", "relatorios")
+        if not os.path.exists(nome_pasta):
+            os.makedirs(nome_pasta)
+        caminho = os.path.join(nome_pasta, nome_arquivo)
+
+
+        with open(caminho, 'w', encoding='utf-8') as f:
             f.write(texto)
 
         print(f"Resumo executivo: {nome_arquivo}")
-        return texto
-    def enviar_email(self, assunto, corpo,para):
+        return caminho
+    
+    def enviar_email(self, assunto, corpo,para,anexos=None):
         remetente =  os.getenv("EMAIL_USER")
         senha = os.getenv("EMAIL_PASSWORD")
-        para = os.getenv("DESTINATARIOS")
 
         msg = MIMEMultipart()
-        msg['from'] = remetente
-        msg['to'] = para
-        msg['subject'] = assunto 
+        msg['From'] = remetente
+        msg['To'] = para
+        msg['Subject'] = assunto 
         msg.attach(MIMEText(corpo, 'plain')) 
+        for caminho_arquivo in anexos :
+            with open(caminho_arquivo, 'rb') as f:
+                anexo_mime = MIMEBase('application', 'octet-stream')
+                anexo_mime.set_payload(f.read())
+                encoders.encode_base64(anexo_mime)
+                nome_arquivo = os.path.basename(caminho_arquivo)
+                anexo_mime.add_header('content-disposition', f'attachment; filename={nome_arquivo}')
+                msg.attach(anexo_mime)
         try:
             servidor = smtplib.SMTP('smtp.gmail.com', 587)
             servidor.starttls()
@@ -160,15 +188,17 @@ if __name__ == "__main__":
     for chave, valor in final_stats.items():
         print(f"   {chave}: {valor}")
 
-    print("\n GERANDO RELATÓRIOS:")
-    missao.gerar_csv()
-    missao.gerar_json()
-    missao.resumo_executivo()
+
+    caminho_csv = missao.gerar_csv()
+    caminho_json = missao.gerar_json()  
+    caminho_txt = missao.resumo_executivo()
+
      
     missao.enviar_email (
         assunto='Relatório de Missão - Mapeamento Soja Pecém 2026',
         corpo=' Missão concluída com sucesso! Futuramente Relatórios em anexo.',
-        para='kayo.mello1488@gmail.com'
+        para='kayo.mello1488@gmail.com',
+        anexos=[caminho_csv, caminho_json, caminho_txt]
     ) 
 
     print("\n" + "=" * 50)
