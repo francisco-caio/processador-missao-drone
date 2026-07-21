@@ -36,7 +36,8 @@ logs/
 
 # Environment variables and secrets
 .env
-.env.*
+relatorios/
+
 
 # IDE and editor settings
 .idea/

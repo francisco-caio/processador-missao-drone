@@ -24,6 +24,15 @@ class ProcessadorMissao:
 
     def adicionar_voo(self, id_voo, lat, lng, alt, fotos, data):
         #Registra um voo de drone
+        if fotos < 0:
+            raise ValueError("Número de fotos não pode ser negativo.")    
+        if alt < 0:
+            raise ValueError("Altitude não pode ser negativa.")
+        if lat  < -90 or lat > 90:
+            raise ValueError("a latitude tem que estar entre -90 e 90 graus.")
+        if lng < -180 or lng > 180:
+            raise ValueError("a longitude tem que estar entre -180 e 180 graus.")
+        
         voo = {
             "id": id_voo,
             "latitude": lat,
@@ -179,7 +188,7 @@ if __name__ == "__main__":
 
     missao = ProcessadorMissao("Mapeamento_Soja_Pecem_2026")
 
-    missao.adicionar_voo("V001", -3.71722, -38.54337, 120, 250, "2026-05-08")
+    missao.adicionar_voo("V001", -3.71722, -38.54337, 120, 45, "2026-05-08")
     missao.adicionar_voo("V002", -3.71800, -38.54400, 115, 230, "2026-05-08")
     missao.adicionar_voo("V003", -3.71900, -38.54500, 125, 280, "2026-05-08")
 
