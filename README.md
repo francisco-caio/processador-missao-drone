@@ -74,7 +74,7 @@ eficiencia_fotos_por_voo: 253.3
 
 - [x] Organização automática dos relatórios em pastas dinâmicas via variáveis de ambiente.
 - [x] Disparo automático de e-mails com os arquivos gerados em anexo.
-- [ ] Implementação de tratamento de exceções (Try/Except) robusto para entradas de dados inválidas.
+- [x] Implementação de tratamento de exceções (Try/Except/raise) robusto para entradas de dados inválidas.
 - [ ] Integração com banco de dados (SQLite/PostgreSQL) para persistir o histórico das missões.
 - [ ] Criação de testes unitários para validar os cálculos estatísticos automaticamente.
 
