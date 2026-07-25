@@ -2,6 +2,7 @@
 PROJETO: Processador de Dados de Drone
 O que a GeoScan recebe fotos + coordenadas, processa, gera relatório
 """
+import sqlite3
 from email.mime.base import MIMEBase
 from email import encoders
 import smtplib
@@ -21,6 +22,19 @@ class ProcessadorMissao:
         self.nome_missao = nome_missao
         self.voos = []
         self.fotos_processadas = 0
+        self.conexao = sqlite3.connect("dados_drone.db")
+        self.cursor = self.conexao.cursor()
+
+        self.cursor.execute('''
+                CREATE TABLE IF NOT EXISTS voos (
+                    id text,
+                    latitude real,
+                    longitude real,
+                    altitude real,
+                    fotos integer,
+                    data text)
+''')
+        self.conexao.commit()       
 
     def adicionar_voo(self, id_voo, lat, lng, alt, fotos, data):
         #Registra um voo de drone
@@ -43,8 +57,20 @@ class ProcessadorMissao:
             "processado_em": datetime.now().isoformat()
         }
         self.voos.append(voo)
+
+        
+
         self.fotos_processadas += fotos
         print(f" Voo {id_voo} registrado: {fotos} fotos @ {alt}m")
+                # 1. Você prepara a frase em SQL usando as interrogações como gavetas vazias
+        comando_sql = "INSERT INTO voos VALUES (?, ?, ?, ?, ?, ?)"
+        
+        # 2. Você junta os dados do voo na mesma ordem das gavetas
+        valores = (id_voo, lat, lng, alt, fotos, data)
+        
+        # 3. O cursor leva a frase e os dados para o banco, e o commit tranca o arquivo
+        self.cursor.execute(comando_sql, valores)
+        self.conexao.commit()
 
     def estatisticas(self):
         #Calcula estatísticas da missão
