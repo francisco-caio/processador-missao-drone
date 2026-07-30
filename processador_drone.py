@@ -56,21 +56,50 @@ class ProcessadorMissao:
             "data": data,
             "processado_em": datetime.now().isoformat()
         }
-        self.voos.append(voo)
+        self.voos=[]
 
         
 
-        self.fotos_processadas += fotos
+        self.fotos_processadas = 0
         print(f" Voo {id_voo} registrado: {fotos} fotos @ {alt}m")
+
                 # 1. Você prepara a frase em SQL usando as interrogações como gavetas vazias
+        
         comando_sql = "INSERT INTO voos VALUES (?, ?, ?, ?, ?, ?)"
         
-        # 2. Você junta os dados do voo na mesma ordem das gavetas
+        # 2. Você junta os dados do voo na mesma                     ordem das gavetas
         valores = (id_voo, lat, lng, alt, fotos, data)
         
         # 3. O cursor leva a frase e os dados para o banco, e o commit tranca o arquivo
         self.cursor.execute(comando_sql, valores)
-        self.conexao.commit()
+        
+    def processar_malha(self, telemetria_teste):
+        print("Processando malha de telemetria...")
+
+        try:
+            with open(telemetria_teste, 'r', encoding='utf-8') as arquivo:
+                leitor_csv = csv.DictReader(arquivo)
+
+                for linha in leitor_csv:
+                    id_voo = linha["ID_Voo"]
+                    lat = float(linha["Latitude"])
+                    lng = float(linha["Longitude"])
+                    alt = float(linha["Altitude"])
+                    fotos = int(linha["Fotos"])
+                    data = linha["Data"]
+
+                    self.adicionar_voo(id_voo, lat, lng, alt, fotos, data)
+                self.conexao.commit()
+                print("todos os dados de telemetria foram processados e salvos no banco de dados.")
+                return True
+        except ValueError as erro:
+            self.conexao.rollback()
+            print(f"ALERTA CRÍTICO: Malha corrompida. Operação abortada!")
+            print(f"Motivo: {erro}")
+            print("Nenhum dado deste arquivo foi salvo no banco.")
+            return False
+
+
 
     def estatisticas(self):
         #Calcula estatísticas da missão
@@ -214,28 +243,31 @@ if __name__ == "__main__":
 
     missao = ProcessadorMissao("Mapeamento_Soja_Pecem_2026")
 
-    missao.adicionar_voo("V001", -3.71722, -38.54337, 120, 45, "2026-05-08")
-    missao.adicionar_voo("V002", -3.71800, -38.54400, 115, 230, "2026-05-08")
-    missao.adicionar_voo("V003", -3.71900, -38.54500, 125, 280, "2026-05-08")
-
-    print("\n ESTATÍSTICAS:")
-    final_stats = missao.estatisticas()
-    for chave, valor in final_stats.items():
-        print(f"   {chave}: {valor}")
+    missao_completa = missao.processar_malha("telemetria_teste.csv")
+    if missao_completa:
+        print("\n ESTATÍSTICAS:")
+        final_stats = missao.estatisticas()
+        for chave, valor in final_stats.items():
+            print(f"   {chave}: {valor}")
 
 
-    caminho_csv = missao.gerar_csv()
-    caminho_json = missao.gerar_json()  
-    caminho_txt = missao.resumo_executivo()
+        caminho_csv = missao.gerar_csv()
+        caminho_json = missao.gerar_json()  
+        caminho_txt = missao.resumo_executivo()
 
-     
-    missao.enviar_email (
-        assunto='Relatório de Missão - Mapeamento Soja Pecém 2026',
-        corpo=' Missão concluída com sucesso! Futuramente Relatórios em anexo.',
-        para='kayo.mello1488@gmail.com',
-        anexos=[caminho_csv, caminho_json, caminho_txt]
-    ) 
+        
+        missao.enviar_email (
+            assunto='Relatório de Missão - Mapeamento Soja Pecém 2026',
+            corpo=' Missão concluída com sucesso! Futuramente Relatórios em anexo.',
+            para='kayo.mello1488@gmail.com',
+            anexos=[caminho_csv, caminho_json, caminho_txt]
+        ) 
 
-    print("\n" + "=" * 50)
-    print("MISSÃO PROCESSADA COM SUCESSO!")
-    print("=" * 50)
+        print("\n" + "=" * 50)
+        print("MISSÃO PROCESSADA COM SUCESSO!")
+        print("=" * 50)
+    else:
+        # Se a missão for False, cai aqui
+        print("\n" + "=" * 50)
+        print("OPERAÇÃO CANCELADA: Relatórios e e-mails suspensos por segurança de dados.")
+        print("=" * 50)
