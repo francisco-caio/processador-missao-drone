@@ -5,7 +5,7 @@
 
 Sistema em Python para processamento de telemetria de missões de mapeamento aéreo com drones.
 
-O projeto simula o fluxo de uma operação de campo, registrando voos, coordenadas, altitude, quantidade de fotos capturadas e gerando relatórios em diferentes formatos para análise técnica e executiva.
+O projeto simula o fluxo de uma operação de campo, registrando voos, coordenadas, altitude, quantidade de fotos capturadas e gerando relatórios em diferentes formatos para análise técnica e executiva e salva todos esses dados no banco de dados.
 
 ## 📌 Sobre o Projeto
 
@@ -27,7 +27,8 @@ A aplicação utiliza **Programação Orientada a Objetos (POO)** por meio da cl
   - CSV;
   - JSON;
   - TXT com resumo executivo.
-
+- Integração com banco de dados(SQLite)
+- Envio de relatórios anexados via STMP.
 ## 🧠 Conceitos Aplicados
 
 - Programação Orientada a Objetos (POO).
@@ -36,14 +37,20 @@ A aplicação utiliza **Programação Orientada a Objetos (POO)** por meio da cl
 - Serialização de dados em JSON.
 - Escrita de arquivos CSV.
 - Cálculo de estatísticas básicas.
+- Tratamentos de erros.
 
 ## 📁 Estrutura do Projeto
 
 ```text
-automacao-drones-dados/
+processador-missao-drone/
 ├── processador_drone.py
 ├── README.md
 ├── .gitignore
+├── .env
+├── dados_drone.db
+├── ler_banco.py
+├── telemetria_teste.csv
+relatorios/
 ├── relatorio_Mapeamento_Soja_Pecem_2026_20260513.csv
 ├── resumo_Mapeamento_Soja_Pecem_2026.json
 └── executivo_Mapeamento_Soja_Pecem_2026.txt
@@ -56,8 +63,13 @@ No terminal, execute:
 ```bash
 python processador_drone.py
 ```
+Ao final da execução, o sistema gera os relatórios da missão nos formatos CSV, JSON e TXT e vai mandar esses arquivos anexados no emial do cliente e ele ainda salva todos esses dados no banco.
 
-Ao final da execução, o sistema gera os relatórios da missão nos formatos CSV, JSON e TXT.
+```bash
+python ler_banco.py
+```
+Esse é para quando quiser fazer alguma extração do banco
+
 
 ## 📊 Exemplo de Saída
 
@@ -75,8 +87,8 @@ eficiencia_fotos_por_voo: 253.3
 - [x] Organização automática dos relatórios em pastas dinâmicas via variáveis de ambiente.
 - [x] Disparo automático de e-mails com os arquivos gerados em anexo.
 - [x] Implementação de tratamento de exceções (Try/Except/raise) robusto para entradas de dados inválidas.
-- [ ] Integração com banco de dados (SQLite/PostgreSQL) para persistir o histórico das missões.
-- [ ] Criação de testes unitários para validar os cálculos estatísticos automaticamente.
+- [x] Integração com banco de dados SQLite3 para persistir o histórico das missões.
+- [x] Criação de testes unitários para validar os cálculos estatísticos automaticamente.
 
 ## 🛠️ Tecnologias
 
@@ -84,6 +96,7 @@ eficiencia_fotos_por_voo: 253.3
 Python
 CSV
 JSON
+SQLite3
 Programação Orientada a Objetos
 ```
 
